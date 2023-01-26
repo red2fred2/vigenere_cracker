@@ -106,6 +106,30 @@ fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 }
 
 /**
+ * Generates the first password of a certain length
+ */
+fn gen_first_pw(length: usize) -> Vec<u8> {
+	vec![0; length]
+}
+
+/**
+ * Generates the next password attempt
+ */
+fn gen_next_pw(pw: &mut Vec<u8>) {
+	let len = pw.len();
+
+	for n in 1..=len {
+		match pw[len-n] {
+			25 => pw[len-n] = 0,
+			_ => {
+				pw[len-n] += 1;
+				break;
+			}
+		};
+	}
+}
+
+/**
  * Reads in a dictionary from a file path
  */
 fn get_dictionary(file_path: &str) -> Vec<String> {
@@ -133,7 +157,19 @@ fn main() {
 	// let decrypted = decrypt_str(&encrypted, &key);
 	// println!("{:?}", decode(&decrypted));
 
-	let raw_dict = get_dictionary("./dictionary.txt");
-	let dict = filter_dictionary(&raw_dict, 9);
-	let encoded_dict: Dict = dict.iter().map(|w| encode(w)).collect();
+	// let raw_dict = get_dictionary("./dictionary.txt");
+	// let dict = filter_dictionary(&raw_dict, 9);
+	// let encoded_dict: Dict = dict.iter().map(|w| encode(w)).collect();
+
+	// println!("{:?}", encoded_dict[0]);
+
+	let mut pw = gen_first_pw(7);
+
+	let num_pws: u64 = 26*26*26*26*26*26*26-1;
+
+	for _ in 0..num_pws {
+		gen_next_pw(&mut pw);
+	}
+
+	println!("{:?}", pw);
 }
