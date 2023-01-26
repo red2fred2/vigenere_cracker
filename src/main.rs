@@ -67,6 +67,23 @@ fn encode_str(message: &String) -> Vec<Option<u8>> {
 }
 
 /**
+ * Encrypts one u8 character
+ */
+fn encrypt_char(input: &u8, key: &u8) -> u8 {
+	(input + key) % 26
+}
+
+/**
+ * Encrypts a Vec of u8 characters
+ */
+fn encrypt_str(input: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+	input.iter().enumerate().map(
+		|(i, c)| encrypt_char(c, &key[i % key.len()])
+	).collect()
+}
+
+
+/**
  * Makes all characters lowercase then strips out non a-z ones.
  */
 fn strip_message(message: &String) -> String {
@@ -74,5 +91,4 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
-	println!("{:?}", decrypt_char(&15, &6) );
 }
