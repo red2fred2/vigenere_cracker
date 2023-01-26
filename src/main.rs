@@ -1,10 +1,12 @@
+/**
+ * Flips around the Option by returning None if any element of the input is None
+ */
 fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Vec<u8>> {
 	if input.iter().any(|e| e.is_none()) {
 		None
 	} else {
 		Some(input.iter().map(|e| e.unwrap()).collect())
 	}
-
 }
 
 /**
