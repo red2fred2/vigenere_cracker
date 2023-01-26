@@ -9,7 +9,7 @@ fn decode_char(code: &Option<u8>) -> Option<char> {
 }
 
 fn decode_str(code: &Vec<Option<u8>>) -> Option<String> {
-code.iter().map(|c| decode_char(c)).collect()
+	code.iter().map(|c| decode_char(c)).collect()
 }
 
 /**
