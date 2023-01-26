@@ -39,10 +39,13 @@ fn encode_str(message: &String) -> Vec<Option<u8>> {
 	message.chars().map(|c| encode_char(&c)).collect()
 }
 
-// fn encrypt(message: Vec<u8>) -> Vec<u8> {
-// 	message
-// }
+/**
+ * Makes all characters lowercase then strips out non a-z ones.
+ */
+fn strip_message(message: &String) -> String {
+	message.to_lowercase().chars().filter(|c| c >= &'a' && c <= &'z').collect()
+}
 
 fn main() {
-	println!("{:?}", decode_str(&encode_str(&"slugmaballs".to_string())));
+
 }
