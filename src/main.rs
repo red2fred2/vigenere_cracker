@@ -1,3 +1,12 @@
+fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Vec<u8>> {
+	if input.iter().any(|e| e.is_none()) {
+		None
+	} else {
+		Some(input.iter().map(|e| e.unwrap()).collect())
+	}
+
+}
+
 /**
  * Decodes a number 0 to 25 as a character a-z. Returns None when out of range.
  */
