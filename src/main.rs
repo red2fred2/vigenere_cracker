@@ -1,7 +1,10 @@
+type Encoded = Vec<u8>;
+type Dict = Vec<Encoded>;
+
 /**
  * Flips around the Option by returning None if any element of the input is None
  */
-fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Vec<u8>> {
+fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Encoded> {
 	if input.iter().any(|e| e.is_none()) {
 		None
 	} else {
@@ -20,14 +23,14 @@ fn decode_char(code: &u8) -> Option<char> {
  * Decodes a Vec of numbers 0 to 25 and return a lowercase string. Returns None
  * when any numbers are out of range.
  */
-fn decode_str(code: &Vec<u8>) -> Option<String> {
+fn decode_str(code: &Encoded) -> Option<String> {
 	code.iter().map(|c| decode_char(c)).collect()
 }
 
 /**
  * Tries to decode a string and crashes if it can't
  */
-fn decode(code: &Vec<u8>) -> String {
+fn decode(code: &Encoded) -> String {
 	decode_str(code).expect("Failed to decode string")
 }
 
@@ -41,7 +44,7 @@ fn decrypt_char(input: &u8, key: &u8) -> u8 {
 /**
  * Decrypts a Vec of u8 characters
  */
-fn decrypt_str(input: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+fn decrypt_str(input: &Encoded, key: &Encoded) -> Encoded {
 	input.iter().enumerate().map(
 		|(i, c)| decrypt_char(c, &key[i % key.len()])
 	).collect()
@@ -73,7 +76,7 @@ fn encode_str(message: &String) -> Vec<Option<u8>> {
 /**
  * Tries to encode a string and crashes if it doesn't work
  */
-fn encode(message: &String) -> Vec<u8> {
+fn encode(message: &String) -> Encoded {
 	let stripped = strip_message(message);
 	let encoded = encode_str(&stripped);
 	all_or_nothing(&encoded).expect("Failed to encode string")
@@ -89,7 +92,7 @@ fn encrypt_char(input: &u8, key: &u8) -> u8 {
 /**
  * Encrypts a Vec of u8 characters
  */
-fn encrypt_str(input: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+fn encrypt_str(input: &Encoded, key: &Encoded) -> Encoded {
 	input.iter().enumerate().map(
 		|(i, c)| encrypt_char(c, &key[i % key.len()])
 	).collect()
@@ -121,19 +124,16 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
-	let message = encode(&"Slugmaballs".to_string());
-	let key = encode(&"penis".to_string());
+	// let message = encode(&"Slugmaballs".to_string());
+	// let key = encode(&"penis".to_string());
 
-	let encrypted = encrypt_str(&message, &key);
-	println!("{:?}", decode(&encrypted));
+	// let encrypted = encrypt_str(&message, &key);
+	// println!("{:?}", decode(&encrypted));
 
-	let decrypted = decrypt_str(&encrypted, &key);
-	println!("{:?}", decode(&decrypted));
+	// let decrypted = decrypt_str(&encrypted, &key);
+	// println!("{:?}", decode(&decrypted));
 
 	let raw_dict = get_dictionary("./dictionary.txt");
 	let dict = filter_dictionary(&raw_dict, 9);
-
-	let word = encode(&dict[0]);
-
-	println!("{:?}", word);
+	let encoded_dict: Dict = dict.iter().map(|w| encode(w)).collect();
 }
