@@ -12,18 +12,15 @@ fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Vec<u8>> {
 /**
  * Decodes a number 0 to 25 as a character a-z. Returns None when out of range.
  */
-fn decode_char(code: &Option<u8>) -> Option<char> {
-	match code {
-		Some(c) => char::from_digit(u32::from(c + 10), 36),
-		None => None
-	}
+fn decode_char(code: &u8) -> Option<char> {
+	char::from_digit(u32::from(code + 10), 36)
 }
 
 /**
  * Decodes a Vec of numbers 0 to 25 and return a lowercase string. Returns None
  * when any numbers are out of range.
  */
-fn decode_str(code: &Vec<Option<u8>>) -> Option<String> {
+fn decode_str(code: &Vec<u8>) -> Option<String> {
 	code.iter().map(|c| decode_char(c)).collect()
 }
 
@@ -91,4 +88,19 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
+	let message = &"Slugmaballs".to_string();
+	let stripped = strip_message(message);
+	let encoded = encode_str(&stripped);
+	let ignored = all_or_nothing(&encoded).unwrap();
+	let key = all_or_nothing(&encode_str(&"penis".to_string())).unwrap();
+
+	let encrypted = encrypt_str(&ignored, &key);
+	let decode_fail = decode_str(&encrypted);
+
+	println!("{:?}", decode_fail);
+
+	let decrypted = decrypt_str(&encrypted, &key);
+	let decoded = decode_str(&decrypted);
+
+	println!("{:?}", decoded);
 }
