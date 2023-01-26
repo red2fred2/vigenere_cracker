@@ -28,6 +28,22 @@ fn decode_str(code: &Vec<Option<u8>>) -> Option<String> {
 }
 
 /**
+ * Decrypts one u8 character
+ */
+fn decrypt_char(input: &u8, key: &u8) -> u8 {
+	(input + 26 - key) % 26
+}
+
+/**
+ * Decrypts a Vec of u8 characters
+ */
+fn decrypt_str(input: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+	input.iter().enumerate().map(
+		|(i, c)| decrypt_char(c, &key[i % key.len()])
+	).collect()
+}
+
+/**
  * Encodes a unicode as a number 0 to 25 when the character is a-z|A-Z. Returns
  * None when the character is not alphabetical.
  */
@@ -58,5 +74,5 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
-
+	println!("{:?}", decrypt_char(&15, &6) );
 }
