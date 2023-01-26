@@ -8,6 +8,10 @@ fn decode_char(code: &Option<u8>) -> Option<char> {
 	}
 }
 
+/**
+ * Decodes a Vec of numbers 0 to 25 and return a lowercase string. Returns None
+ * when any numbers are out of range.
+ */
 fn decode_str(code: &Vec<Option<u8>>) -> Option<String> {
 	code.iter().map(|c| decode_char(c)).collect()
 }
