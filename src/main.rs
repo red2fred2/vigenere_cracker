@@ -106,6 +106,29 @@ fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 }
 
 /**
+ * For the first word, finds which letters do not occur at certain positions in
+ * the dictionary. Each letter weeded out will save 26^len-1 runs. All dictionary
+ * items must be the same length.
+ */
+fn find_weed_out_letters(dictionary: &Dict, first_word_length: usize) -> Vec<Vec<u8>> {
+	let mut weed_out = Vec::new();
+
+	for pos in 0..first_word_length {
+		let mut table = vec![true; 26];
+
+		for word in dictionary {
+			let letter = word[pos];
+			table[usize::from(letter)] = false;
+		}
+
+		let alphabet_len: u8 = 26;
+		weed_out.push((0..alphabet_len).filter(|c| table[usize::from(*c)]).collect());
+	}
+
+	weed_out
+}
+
+/**
  * Generates the first password of a certain length
  */
 fn gen_first_pw(length: usize) -> Vec<u8> {
@@ -148,6 +171,8 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
+	let first_word_length: usize = 13;
+
 	// let message = encode(&"Slugmaballs".to_string());
 	// let key = encode(&"penis".to_string());
 
@@ -157,19 +182,9 @@ fn main() {
 	// let decrypted = decrypt_str(&encrypted, &key);
 	// println!("{:?}", decode(&decrypted));
 
-	// let raw_dict = get_dictionary("./dictionary.txt");
-	// let dict = filter_dictionary(&raw_dict, 9);
-	// let encoded_dict: Dict = dict.iter().map(|w| encode(w)).collect();
+	let raw_dict = get_dictionary("./dictionary.txt");
+	let decoded_dict = filter_dictionary(&raw_dict, first_word_length);
+	let dict: Dict = decoded_dict.iter().map(|w| encode(w)).collect();
 
-	// println!("{:?}", encoded_dict[0]);
-
-	let mut pw = gen_first_pw(7);
-
-	let num_pws: u64 = 26*26*26*26*26*26*26-1;
-
-	for _ in 0..num_pws {
-		gen_next_pw(&mut pw);
-	}
-
-	println!("{:?}", pw);
+	println!("{:?}", find_weed_out_letters(&dict, first_word_length));
 }
