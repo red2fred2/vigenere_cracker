@@ -24,10 +24,10 @@ fn encode_char(message: char) -> Option<u8> {
 }
 
 /**
- * Encodes a str& as a Vec of u8s valued 0 to 25. Characters will be None when
+ * Encodes a String as a Vec of u8s valued 0 to 25. Characters will be None when
  * not alphabetical.
  */
-fn encode_str(message: &str) -> Vec<Option<u8>> {
+fn encode_str(message: String) -> Vec<Option<u8>> {
 	message.chars().map(|c| encode_char(c)).collect()
 }
 
@@ -36,5 +36,4 @@ fn encode_str(message: &str) -> Vec<Option<u8>> {
 // }
 
 fn main() {
-	println!("{:?}", decode_char(Some(26)));
 }
