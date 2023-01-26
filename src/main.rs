@@ -1,5 +1,3 @@
-use std::fs;
-
 /**
  * Flips around the Option by returning None if any element of the input is None
  */
@@ -92,7 +90,7 @@ fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
  * Reads in a dictionary from a file path
  */
 fn get_dictionary(file_path: &str) -> Vec<String> {
-	fs::read_to_string(file_path)
+	std::fs::read_to_string(file_path)
 	.expect("Failed to read dictionary file")
 	.split_whitespace()
 	.map(|w| w.to_string())
