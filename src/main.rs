@@ -79,6 +79,12 @@ fn encrypt_str(input: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
 	).collect()
 }
 
+/**
+ * Filters a given dictionary to only include words of a certain length
+ */
+fn filterDictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
+	dict.iter().filter(|w| w.len() == length).map(|w| w.clone()).collect()
+}
 
 /**
  * Makes all characters lowercase then strips out non a-z ones.
