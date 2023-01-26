@@ -1,4 +1,14 @@
 /**
+ * Decodes a number 0 to 25 as a character a-z. Returns None when out of range.
+ */
+fn decode_char(code: Option<u8>) -> Option<char> {
+	match code {
+		Some(c) => char::from_digit(u32::from(c + 10), 36),
+		None => None
+	}
+}
+
+/**
  * Encodes a unicode as a number 0 to 25 when the character is a-z|A-Z. Returns
  * None when the character is not alphabetical.
  */
@@ -26,5 +36,5 @@ fn encode_str(message: &str) -> Vec<Option<u8>> {
 // }
 
 fn main() {
-	println!("{:?}", encode_str("azZa"));
+	println!("{:?}", decode_char(Some(26)));
 }
