@@ -1,6 +1,6 @@
 /**
- * Encodes a unicode as a number 0 to 25 when the character is a-z|A-Z.
- * Returns None when the character is not alphabetical.
+ * Encodes a unicode as a number 0 to 25 when the character is a-z|A-Z. Returns
+ * None when the character is not alphabetical.
  */
 fn encode_char(message: char) -> Option<u8> {
 	match message.to_digit(36) {
@@ -13,6 +13,18 @@ fn encode_char(message: char) -> Option<u8> {
 	}
 }
 
+/**
+ * Encodes a str& as a Vec of u8s valued 0 to 25. Characters will be None when
+ * not alphabetical.
+ */
+fn encode_str(message: &str) -> Vec<Option<u8>> {
+	message.chars().map(|c| encode_char(c)).collect()
+}
+
+// fn encrypt(message: Vec<u8>) -> Vec<u8> {
+// 	message
+// }
+
 fn main() {
-	println!("{:?}", encode_char('Z'));
+	println!("{:?}", encode_str("azZa"));
 }
