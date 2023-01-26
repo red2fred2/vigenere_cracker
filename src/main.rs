@@ -25,6 +25,13 @@ fn decode_str(code: &Vec<u8>) -> Option<String> {
 }
 
 /**
+ * Tries to decode a string and crashes if it can't
+ */
+fn decode(code: &Vec<u8>) -> String {
+	decode_str(code).expect("Failed to decode string")
+}
+
+/**
  * Decrypts one u8 character
  */
 fn decrypt_char(input: &u8, key: &u8) -> u8 {
@@ -61,6 +68,15 @@ fn encode_char(message: &char) -> Option<u8> {
  */
 fn encode_str(message: &String) -> Vec<Option<u8>> {
 	message.chars().map(|c| encode_char(&c)).collect()
+}
+
+/**
+ * Tries to encode a string and crashes if it doesn't work
+ */
+fn encode(message: &String) -> Vec<u8> {
+	let stripped = strip_message(message);
+	let encoded = encode_str(&stripped);
+	all_or_nothing(&encoded).expect("Failed to encode string")
 }
 
 /**
@@ -105,28 +121,19 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
-	let message = &"Slugmaballs".to_string();
-	let stripped = strip_message(message);
-	let encoded = encode_str(&stripped);
-	let ignored = all_or_nothing(&encoded).unwrap();
-	let key = all_or_nothing(&encode_str(&"penis".to_string())).unwrap();
+	let message = encode(&"Slugmaballs".to_string());
+	let key = encode(&"penis".to_string());
 
-	let encrypted = encrypt_str(&ignored, &key);
-	let decode_fail = decode_str(&encrypted);
-
-	println!("{:?}", decode_fail);
+	let encrypted = encrypt_str(&message, &key);
+	println!("{:?}", decode(&encrypted));
 
 	let decrypted = decrypt_str(&encrypted, &key);
-	let decoded = decode_str(&decrypted);
-
-	println!("{:?}", decoded);
+	println!("{:?}", decode(&decrypted));
 
 	let raw_dict = get_dictionary("./dictionary.txt");
 	let dict = filter_dictionary(&raw_dict, 9);
 
-	let word = strip_message(&dict[0]);
-	let encoded_word = encode_str(&word);
-	let unsafe_encoded_word = all_or_nothing(&encoded_word).unwrap();
+	let word = encode(&dict[0]);
 
-	println!("{:?}", unsafe_encoded_word);
+	println!("{:?}", word);
 }
