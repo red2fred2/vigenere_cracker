@@ -158,6 +158,21 @@ fn get_dictionary(file_path: &str) -> Vec<String> {
 }
 
 /**
+ * Strides over an encoded string and returns one that matches the repeating
+ * pattern of a key
+ */
+fn stride(input: &Encoded, stride: usize, offset: usize) -> Encoded {
+	let mut output = Vec::new();
+
+	let length = input.len();
+	for i in (offset..length).step_by(stride) {
+		output.push(input[i]);
+	}
+
+	output
+}
+
+/**
  * Makes all characters lowercase then strips out non a-z ones.
  */
 fn strip_message(message: &String) -> String {
@@ -184,7 +199,7 @@ fn main() {
 
 	let freqs = gen_freqs(&full_dict);
 
-	println!("{:?}", freqs)
+	println!("{:?}", freqs);
 
 	// println!("{:?}", encoded_dict[0]);
 
