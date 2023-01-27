@@ -113,6 +113,23 @@ fn gen_first_pw(length: usize) -> Vec<u8> {
 }
 
 /**
+ * Generate the frequencies of letters in the dictionary
+ */
+fn gen_freqs(dict: &Dict) -> Vec<f32> {
+	let mut table: Vec<f32> = vec![0.0; 26];
+
+	for word in dict {
+		for c in word {
+			let index = usize::from(*c);
+			table[index] += 1.0;
+		}
+	}
+	let total: f32 = table.iter().sum();
+
+	table.iter().map(|e| e / total).collect()
+}
+
+/**
  * Generates the next password attempt
  */
 fn gen_next_pw(pw: &mut Vec<u8>) {
@@ -148,6 +165,9 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
+	let pw_len = 2;
+	let first_word_len = 6;
+
 	// let message = encode(&"Slugmaballs".to_string());
 	// let key = encode(&"penis".to_string());
 
@@ -157,19 +177,24 @@ fn main() {
 	// let decrypted = decrypt_str(&encrypted, &key);
 	// println!("{:?}", decode(&decrypted));
 
-	// let raw_dict = get_dictionary("./dictionary.txt");
-	// let dict = filter_dictionary(&raw_dict, 9);
-	// let encoded_dict: Dict = dict.iter().map(|w| encode(w)).collect();
+	let raw_dict = get_dictionary("./dictionary.txt");
+	let full_dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
+	let filtered_dict = filter_dictionary(&raw_dict, 9);
+	let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
+
+	let freqs = gen_freqs(&full_dict);
+
+	println!("{:?}", freqs)
 
 	// println!("{:?}", encoded_dict[0]);
 
-	let mut pw = gen_first_pw(7);
+	// let mut pw = gen_first_pw(2);
 
-	let num_pws: u64 = 26*26*26*26*26*26*26-1;
+	// let num_pws: u64 = 26*26*26*26*26*26*26-1;
 
-	for _ in 0..num_pws {
-		gen_next_pw(&mut pw);
-	}
+	// for _ in 0..num_pws {
+	// 	gen_next_pw(&mut pw);
+	// }
 
-	println!("{:?}", pw);
+	// println!("{:?}", pw);
 }
