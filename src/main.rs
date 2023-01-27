@@ -106,23 +106,6 @@ fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 }
 
 /**
- * Finds the decode order most likely to run into impossible characters
- */
-fn find_best_decode_order(weed_outs: &Vec<Vec<u8>>) -> Vec<usize> {
-	let mut num_weeds: Vec<usize> = weed_outs.iter().map(|e| e.len() + 1).collect();
-	let mut order = Vec::new();
-
-	for _ in 0..num_weeds.len() {
-		let best = *num_weeds.iter().max().unwrap();
-		let best_pos = num_weeds.iter().position(|e| e == &best).unwrap();
-		num_weeds[best_pos] = 0;
-		order.push(best_pos);
-	}
-
-	order
-}
-
-/**
  * For the first word, finds which letters do not occur at certain positions in
  * the dictionary. Each letter weeded out will save 26^len-1 runs. All dictionary
  * items must be the same length.
@@ -188,10 +171,7 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
-	// The keys are all shorter than their respective first word length. Finding
-	// the word should be enough to confidently find the key.
 	let first_word_length: usize = 13;
-	let key_length: usize = 2;
 
 	// let message = encode(&"Slugmaballs".to_string());
 	// let key = encode(&"penis".to_string());
@@ -206,9 +186,5 @@ fn main() {
 	let decoded_dict = filter_dictionary(&raw_dict, first_word_length);
 	let dict: Dict = decoded_dict.iter().map(|w| encode(w)).collect();
 
-	let weed_outs = find_weed_out_letters(&dict, first_word_length);
-	let best_order = find_best_decode_order(&weed_outs);
-
-	println!("{:?}", weed_outs);
-	println!("{:?}", best_order);
+	println!("{:?}", find_weed_out_letters(&dict, first_word_length));
 }
