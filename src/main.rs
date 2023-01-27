@@ -92,6 +92,7 @@ fn encrypt_char(input: &u8, key: &u8) -> u8 {
 /**
  * Encrypts a Vec of u8 characters
  */
+#[allow(dead_code)]
 fn encrypt_str(input: &Encoded, key: &Encoded) -> Encoded {
 	input.iter().enumerate().map(
 		|(i, c)| encrypt_char(c, &key[i % key.len()])
@@ -106,6 +107,32 @@ fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 }
 
 /**
+ * Finds the best frequecy match offsets from best to worst
+ */
+fn find_best_offsets(a: &Vec<f32>, b: &Vec<f32>) -> Vec<usize> {
+	// Lowest fitness is best
+	let mut fitness_list: Vec<(f32, usize)> = Vec::new();
+
+	for offset in 0..26 {
+		let mut fitness = (0.0, offset);
+
+		for i in 0..26 {
+			let (fit, _) = fitness;
+			let diff = (a[i] - b[i]).abs();
+
+			fitness = (fit + diff, offset);
+		}
+		fitness_list.push(fitness);
+	}
+
+	fitness_list.sort_unstable_by(
+		|(a, _), (b, _)| a.partial_cmp(b).unwrap()
+	);
+
+	fitness_list.iter().map(|(_, i)| *i).collect()
+}
+
+/**
  * Generates the first password of a certain length
  */
 fn gen_first_pw(length: usize) -> Vec<u8> {
@@ -115,7 +142,7 @@ fn gen_first_pw(length: usize) -> Vec<u8> {
 /**
  * Generate the frequencies of letters in the dictionary
  */
-fn gen_freqs(dict: &Dict) -> Vec<f32> {
+fn gen_dict_freqs(dict: &Dict) -> Vec<f32> {
 	let mut table: Vec<f32> = vec![0.0; 26];
 
 	for word in dict {
@@ -123,6 +150,22 @@ fn gen_freqs(dict: &Dict) -> Vec<f32> {
 			let index = usize::from(*c);
 			table[index] += 1.0;
 		}
+	}
+	let total: f32 = table.iter().sum();
+
+	table.iter().map(|e| e / total).collect()
+}
+
+
+/**
+ * Generate the frequencies of letters in the encoded string
+ */
+fn gen_freqs(string: &Encoded) -> Vec<f32> {
+	let mut table: Vec<f32> = vec![0.0; 26];
+
+	for c in string {
+		let index = usize::from(*c);
+		table[index] += 1.0;
 	}
 	let total: f32 = table.iter().sum();
 
@@ -180,36 +223,22 @@ fn strip_message(message: &String) -> String {
 }
 
 fn main() {
+	// Set inputs
+	let raw_ciphertext = "MSOKKJCOSXOEEKDTOSLGFWCMCHSUSGX".to_string();
 	let pw_len = 2;
 	let first_word_len = 6;
 
-	// let message = encode(&"Slugmaballs".to_string());
-	// let key = encode(&"penis".to_string());
+	// Encode
+	let ciphertext = encode(&raw_ciphertext);
 
-	// let encrypted = encrypt_str(&message, &key);
-	// println!("{:?}", decode(&encrypted));
-
-	// let decrypted = decrypt_str(&encrypted, &key);
-	// println!("{:?}", decode(&decrypted));
-
+	// Dictionaries
 	let raw_dict = get_dictionary("./dictionary.txt");
-	let full_dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
+
 	let filtered_dict = filter_dictionary(&raw_dict, 9);
+
+	let full_dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
 	let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
 
-	let freqs = gen_freqs(&full_dict);
+	let dict_freqs = gen_dict_freqs(&full_dict);
 
-	println!("{:?}", freqs);
-
-	// println!("{:?}", encoded_dict[0]);
-
-	// let mut pw = gen_first_pw(2);
-
-	// let num_pws: u64 = 26*26*26*26*26*26*26-1;
-
-	// for _ in 0..num_pws {
-	// 	gen_next_pw(&mut pw);
-	// }
-
-	// println!("{:?}", pw);
 }
