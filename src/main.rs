@@ -13,6 +13,34 @@ fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Encoded> {
 }
 
 /**
+ * Checks if an attempted decryption is a possible solution
+ */
+fn check_attempt(attempt: &Encoded, first_word_dict: &Dict) -> bool {
+	let first_word_length = first_word_dict[0].len();
+
+	for word in first_word_dict {
+		let mut word_possible = true;
+
+		for i in 0..first_word_length {
+			let letter = word[i];
+
+			// check if it fails at this letter
+			if letter != attempt[i] {
+				word_possible = false;
+				break;
+			}
+		}
+
+		// If any of the words were possible, just return true
+		if word_possible {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * Decodes a number 0 to 25 as a character a-z. Returns None when out of range.
  */
 fn decode_char(code: &u8) -> Option<char> {
@@ -109,7 +137,7 @@ fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 /**
  * Finds the best frequecy match offsets from best to worst
  */
-fn find_best_offsets(a: &Vec<f32>, b: &Vec<f32>) -> Vec<usize> {
+fn find_best_offsets(a: &Vec<f32>, b: &Vec<f32>) -> Vec<u8> {
 	// Lowest fitness is best
 	let mut fitness_list: Vec<(f32, usize)> = Vec::new();
 
@@ -117,26 +145,22 @@ fn find_best_offsets(a: &Vec<f32>, b: &Vec<f32>) -> Vec<usize> {
 		let mut fitness = (0.0, offset);
 
 		for i in 0..26 {
+			let index = (i + offset) % 26;
 			let (fit, _) = fitness;
-			let diff = (a[i] - b[i]).abs();
+			let diff = (a[i] - b[index]).abs();
 
 			fitness = (fit + diff, offset);
 		}
 		fitness_list.push(fitness);
 	}
 
+	// println!("Fitness list: {:?}", fitness_list);
+
 	fitness_list.sort_unstable_by(
 		|(a, _), (b, _)| a.partial_cmp(b).unwrap()
 	);
 
-	fitness_list.iter().map(|(_, i)| *i).collect()
-}
-
-/**
- * Generates the first password of a certain length
- */
-fn gen_first_pw(length: usize) -> Vec<u8> {
-	vec![0; length]
+	fitness_list.iter().map(|(_, i)| u8::try_from(*i).unwrap()).collect()
 }
 
 /**
@@ -156,7 +180,6 @@ fn gen_dict_freqs(dict: &Dict) -> Vec<f32> {
 	table.iter().map(|e| e / total).collect()
 }
 
-
 /**
  * Generate the frequencies of letters in the encoded string
  */
@@ -170,23 +193,6 @@ fn gen_freqs(string: &Encoded) -> Vec<f32> {
 	let total: f32 = table.iter().sum();
 
 	table.iter().map(|e| e / total).collect()
-}
-
-/**
- * Generates the next password attempt
- */
-fn gen_next_pw(pw: &mut Vec<u8>) {
-	let len = pw.len();
-
-	for n in 1..=len {
-		match pw[len-n] {
-			25 => pw[len-n] = 0,
-			_ => {
-				pw[len-n] += 1;
-				break;
-			}
-		};
-	}
 }
 
 /**
@@ -224,21 +230,37 @@ fn strip_message(message: &String) -> String {
 
 fn main() {
 	// Set inputs
-	let raw_ciphertext = "MSOKKJCOSXOEEKDTOSLGFWCMCHSUSGX".to_string();
-	let pw_len = 2;
+	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
+	let pw_len = 7;
 	let first_word_len = 6;
+
+	// Dictionaries
+	let raw_dict = get_dictionary("./dictionary.txt");
+	let filtered_dict = filter_dictionary(&raw_dict, first_word_len);
 
 	// Encode
 	let ciphertext = encode(&raw_ciphertext);
 
-	// Dictionaries
-	let raw_dict = get_dictionary("./dictionary.txt");
-
-	let filtered_dict = filter_dictionary(&raw_dict, 9);
-
 	let full_dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
 	let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
 
+	// Find the best keys to try
 	let dict_freqs = gen_dict_freqs(&full_dict);
+	let mut best_keys: Vec<Vec<u8>> = Vec::new();
 
+	for key_part in 0..pw_len {
+		let relevant_ciphertext = stride(&ciphertext, pw_len, key_part);
+		let ciphertext_freqs = gen_freqs(&relevant_ciphertext);
+
+		best_keys.push(find_best_offsets(&dict_freqs, &ciphertext_freqs));
+		// .iter().map(|e| decode_char(e).unwrap()).collect());
+	}
+
+	// Attempt decryption
+	let key: Encoded = vec![best_keys[0][0], best_keys[1][0]];
+	let attempt = decrypt_str(&ciphertext, &key);
+
+	let isGood = check_attempt(&attempt, &first_word_dict);
+
+	println!("{:?}", decode(&attempt));
 }
