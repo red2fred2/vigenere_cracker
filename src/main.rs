@@ -250,9 +250,9 @@ fn strip_message(message: &String) -> String {
 fn main() {
 	// Set inputs
 	let dictionary_file = "./dictionary.txt";
-	let raw_ciphertext = "PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string();
-	let pw_len = 3;
-	let first_word_len = 7;
+	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
+	let pw_len = 7;
+	let first_word_len = 13;
 
 	// Dictionaries
 	let raw_dict = get_dictionary(dictionary_file);
@@ -273,7 +273,6 @@ fn main() {
 		let ciphertext_freqs = gen_freqs(&relevant_ciphertext);
 
 		best_keys.push(find_best_offsets(&dict_freqs, &ciphertext_freqs));
-		// .iter().map(|e| decode_char(e).unwrap()).collect());
 	}
 
 	// Attempt decryption
@@ -284,7 +283,7 @@ fn main() {
 		let attempt = decrypt_str(&ciphertext, &key);
 
 		if check_attempt(&attempt, &first_word_dict) {
-			println!("{:?}", decode(&attempt));
+			println!("{} -> {}", decode(&key), decode(&attempt).to_uppercase());
 			break;
 		}
 	}
