@@ -11,7 +11,7 @@ impl AttemptOrder {
 	/**
 	 * Returns a new attempt order generator
 	 */
-	pub fn new(key_length: usize, num_letters: usize) -> AttemptOrder {
+	pub fn new(key_length: usize, num_letters: usize) -> Self {
 		let combination = vec![0; key_length];
 		let combination_num = 0;
 		let num_changes = 0;
