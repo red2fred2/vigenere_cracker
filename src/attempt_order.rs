@@ -107,7 +107,6 @@ impl Iterator for AttemptOrder {
 
 		// Check if this is the last of this num_changes
 		if self.is_last() {
-			println!("-----------------------------is last-------------------------------");
 			// Check if it's the very last one
 			if self.num_changes == self.key_length {
 				return None;
