@@ -3,6 +3,10 @@ extern crate test;
 
 pub mod attempt_order;
 
+use std::fs::File;
+use std::io::prelude::*;
+use serde_json;
+
 type Encoded = Vec<u8>;
 type Dict = Vec<Encoded>;
 
@@ -247,7 +251,32 @@ fn strip_message(message: &String) -> String {
 	message.to_lowercase().chars().filter(|c| c >= &'a' && c <= &'z').collect()
 }
 
-fn main() {
+fn write_dict_freqs(freqs: &Vec<f32>) -> std::io::Result<()> {
+	let mut file = File::create("frequencies.json")?;
+
+	let json = serde_json::to_string(&freqs)?;
+	let mut data: Vec<u8> = Vec::new();
+
+	write!(&mut data, "{}", json)?;
+	file.write(&data)?;
+
+	Ok(())
+}
+
+fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
+	let mut file = File::open("frequencies.json")?;
+
+	let mut data = Vec::<u8>::new();
+	file.read_to_end(&mut data)?;
+
+	let freqs = serde_json::from_slice(&data)?;
+
+	Ok(freqs)
+}
+
+fn main() -> std::io::Result<()> {
+	let start = std::time::Instant::now();
+
 	// Set inputs
 	let dictionary_file = "./dictionary.txt";
 	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
@@ -260,12 +289,24 @@ fn main() {
 
 	// Encode
 	let ciphertext = encode(&raw_ciphertext);
+	// println!("Encode ciphertext: {}ms", start.elapsed().as_millis());
 
-	let full_dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
 	let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
+	// println!("Encode first_word_dict: {}ms", start.elapsed().as_millis());
 
-	// Find the best keys to try
-	let dict_freqs = gen_dict_freqs(&full_dict);
+	// Get letter frequencies
+	let freqs_read = read_dict_freqs();
+	let dict_freqs = match freqs_read {
+		Ok(freqs) => freqs,
+		_ => {
+			let encoded = raw_dict.iter().map(|w| encode(w)).collect();
+			let freqs = gen_dict_freqs(&encoded);
+			write_dict_freqs(&freqs)?;
+
+			freqs
+		}
+	};
+
 	let mut best_keys: Vec<Vec<u8>> = Vec::new();
 
 	for key_part in 0..pw_len {
@@ -287,6 +328,10 @@ fn main() {
 			break;
 		}
 	}
+
+	println!("It took {}ms", start.elapsed().as_millis());
+
+	Ok(())
 }
 
 // Benchmarks
