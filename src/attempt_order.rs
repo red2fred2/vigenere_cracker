@@ -1,3 +1,8 @@
+/*
+ * I have no idea why it's so hard to traverse a matrix like this. At least it
+ * runs in like 200 us.
+ */
+
 pub struct AttemptOrder {
 	combination: Vec<usize>,
 	combination_num: usize,
