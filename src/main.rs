@@ -1,3 +1,8 @@
+#![feature(test)]
+extern crate test;
+
+pub mod attempt_order;
+
 type Encoded = Vec<u8>;
 type Dict = Vec<Encoded>;
 
@@ -38,6 +43,20 @@ fn check_attempt(attempt: &Encoded, first_word_dict: &Dict) -> bool {
 	}
 
 	return false;
+}
+
+/**
+ * Gets a key from the best keys list and a combination
+ */
+fn choose_key(best_keys: &Vec<Vec<u8>>, combination: &Vec<usize>) -> Encoded {
+	let mut key = Vec::new();
+
+	for (i, c) in combination.iter().enumerate() {
+		let key_part = best_keys[i][*c];
+		key.push(key_part);
+	}
+
+	key
 }
 
 /**
@@ -230,12 +249,13 @@ fn strip_message(message: &String) -> String {
 
 fn main() {
 	// Set inputs
-	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
-	let pw_len = 7;
-	let first_word_len = 6;
+	let dictionary_file = "./dictionary.txt";
+	let raw_ciphertext = "PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string();
+	let pw_len = 3;
+	let first_word_len = 7;
 
 	// Dictionaries
-	let raw_dict = get_dictionary("./dictionary.txt");
+	let raw_dict = get_dictionary(dictionary_file);
 	let filtered_dict = filter_dictionary(&raw_dict, first_word_len);
 
 	// Encode
@@ -257,10 +277,103 @@ fn main() {
 	}
 
 	// Attempt decryption
-	let key: Encoded = vec![best_keys[0][0], best_keys[1][0]];
-	let attempt = decrypt_str(&ciphertext, &key);
+	let order = attempt_order::AttemptOrder::new(pw_len, 26);
 
-	let isGood = check_attempt(&attempt, &first_word_dict);
+	for combination in order {
+		let key = choose_key(&best_keys, &combination);
+		let attempt = decrypt_str(&ciphertext, &key);
 
-	println!("{:?}", decode(&attempt));
+		if check_attempt(&attempt, &first_word_dict) {
+			println!("{:?}", decode(&attempt));
+			break;
+		}
+	}
+}
+
+// Benchmarks
+#[cfg(test)]
+mod tests {
+	use super::*;
+    use test::Bencher;
+
+	#[bench]
+	fn bench_get_dictionary(b: &mut Bencher) {
+		b.iter(|| get_dictionary("./dictionary.txt"))
+	}
+
+	#[bench]
+	fn bench_filter_dictionary(b: &mut Bencher) {
+		let dict = get_dictionary("./dictionary.txt");
+
+		b.iter(|| filter_dictionary(&dict, 6))
+	}
+
+	#[bench]
+	fn bench_encode(b: &mut Bencher) {
+		let message = "PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string();
+
+		b.iter(|| encode(&message))
+	}
+
+	#[bench]
+	fn bench_gen_dict_freqs(b: &mut Bencher) {
+		let dictionary_file = "./dictionary.txt";
+		let raw_dict = get_dictionary(dictionary_file);
+		let dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
+
+		b.iter(|| gen_dict_freqs(&dict))
+	}
+
+	#[bench]
+	fn bench_stride(b: &mut Bencher) {
+		let input = encode(&"PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string());
+
+		b.iter(|| stride(&input, 2, 1))
+	}
+
+	#[bench]
+	fn bench_gen_freqs(b: &mut Bencher) {
+		let string = encode(&"PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string());
+
+		b.iter(|| gen_freqs(&string))
+	}
+
+	#[bench]
+	fn bench_find_best_offsets(b: &mut Bencher) {
+		let text = encode(&"PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string());
+		let dict: Dict = get_dictionary("./dictionary.txt").iter().map(|w| encode(w)).collect();
+		let dict_freqs = gen_dict_freqs(&dict);
+		let text_freqs = gen_freqs(&text);
+
+		b.iter(|| find_best_offsets(&dict_freqs, &text_freqs))
+	}
+
+	#[bench]
+	fn bench_order(b: &mut Bencher) {
+		let mut order = attempt_order::AttemptOrder::new(5, 26);
+
+		b.iter(|| order.next())
+	}
+
+	#[bench]
+	fn bench_decrypt_str(b: &mut Bencher) {
+		let input = encode(&"PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string());
+		let key: Encoded = vec![5, 20];
+
+		b.iter(|| decrypt_str(&input, &key))
+	}
+
+	#[bench]
+	fn bench_check_attempt(b: &mut Bencher) {
+		let attempt = encode(&"PSPDYLOAFSGFREQKKPOERNIYVSDZSUOVGXSRRIPWERDIPCFSDIQZIASEJVCGXAYBGYXFPSREKFMEXEBIYDGFKREOWGXEQSXSKXGYRRRVMEKFFIPIWJSKFDJMBGCC".to_string());
+		let filtered_dict = filter_dictionary(&get_dictionary("./dictionary.txt"), 8);
+		let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
+
+		b.iter(|| check_attempt(&attempt, &first_word_dict))
+	}
+
+	#[bench]
+	fn bench_main(b: &mut Bencher) {
+		b.iter(|| main())
+	}
 }
