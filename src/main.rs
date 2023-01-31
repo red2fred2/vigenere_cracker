@@ -266,7 +266,7 @@ fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
 	let mut data = Vec::<u8>::new();
 	file.read_to_end(&mut data)?;
 
-	Ok(bincode::deserialize(&data).unwrap())
+	Ok(bincode2::deserialize(&data).unwrap())
 }
 
 fn read_fwd(length: usize) -> std::io::Result<Dict> {
@@ -276,7 +276,7 @@ fn read_fwd(length: usize) -> std::io::Result<Dict> {
 	let mut data = Vec::<u8>::new();
 	file.read_to_end(&mut data)?;
 
-	Ok(bincode::deserialize(&data).unwrap())
+	Ok(bincode2::deserialize(&data).unwrap())
 }
 
 /**
@@ -304,7 +304,7 @@ fn strip_message(message: &String) -> String {
 fn write_dict_freqs(freqs: &Vec<f32>) -> std::io::Result<()> {
 	let mut file = File::create("frequencies.cache")?;
 
-	let data = bincode::serialize(&freqs).unwrap();
+	let data = bincode2::serialize(&freqs).unwrap();
 	file.write(&data)?;
 
 	Ok(())
@@ -332,7 +332,7 @@ fn write_fwds(dict: &Dict, length: usize) -> std::io::Result<Dict> {
 		let path = format!("dict{}.cache", i);
 		let mut file = File::create(path)?;
 
-		let data = bincode::serialize(d).unwrap();
+		let data = bincode2::serialize(d).unwrap();
 		file.write(&data)?;
 	}
 
