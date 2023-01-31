@@ -350,13 +350,16 @@ fn main() -> std::io::Result<()> {
 	}
 
 	let dictionary_file = "./dictionary.txt";
-	let raw_ciphertext = &args[3];
-	let pw_len = args[1].parse::<usize>().unwrap();
 	let first_word_len = args[2].parse::<usize>().unwrap();
 
-	let ciphertext = encode(&raw_ciphertext);
 	let dict = get_fwd(dictionary_file, first_word_len)?;
 	let dict_freqs = get_dict_freqs(dictionary_file)?;
+
+	println!("Cache load took {} µs", start.elapsed().as_micros());
+	let start = std::time::Instant::now();
+
+	let ciphertext = encode(&args[3]);
+	let pw_len = args[1].parse::<usize>().unwrap();
 
 	// Find best keys to try
 	let mut best_keys: Vec<Vec<u8>> = Vec::new();
@@ -381,7 +384,7 @@ fn main() -> std::io::Result<()> {
 		}
 	}
 
-	println!("It took {} µs", start.elapsed().as_micros());
+	println!("Decryption took {} µs", start.elapsed().as_micros());
 
 	Ok(())
 }
