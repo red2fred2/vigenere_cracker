@@ -231,6 +231,59 @@ fn get_dictionary(file_path: &str) -> Vec<String> {
 }
 
 /**
+ * Gets the dictionary frequencies from a cache if possible
+ */
+fn get_dict_freqs(dictionary_file: &str) -> std::io::Result<Vec<f32>> {
+	let freqs_read = read_dict_freqs();
+	match freqs_read {
+		Ok(freqs) => Ok(freqs),
+		_ => {
+			let raw_dict = get_dictionary(dictionary_file);
+			let encoded = raw_dict.iter().map(|w| encode(w)).collect();
+			let freqs = gen_dict_freqs(&encoded);
+			write_dict_freqs(&freqs)?;
+
+			Ok(freqs)
+		}
+	}
+}
+
+fn get_fwd(dictionary_file: &str, len: usize) -> std::io::Result<Dict> {
+	let dict_read = read_fwd(len);
+	match dict_read {
+		Ok(d) => Ok(d),
+		_ => {
+			let raw_dict = get_dictionary(dictionary_file);
+			let dict = &raw_dict.iter().map(|w| encode(w)).collect();
+			Ok(write_fwds(dict, len)?)
+		}
+	}
+}
+
+fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
+	let mut file = File::open("frequencies.json")?;
+
+	let mut data = Vec::<u8>::new();
+	file.read_to_end(&mut data)?;
+
+	let freqs = serde_json::from_slice(&data)?;
+
+	Ok(freqs)
+}
+
+fn read_fwd(length: usize) -> std::io::Result<Dict> {
+	let path = format!("dict{}.json", length);
+	let mut file = File::open(path)?;
+
+	let mut data = Vec::<u8>::new();
+	file.read_to_end(&mut data)?;
+
+	let freqs = serde_json::from_slice(&data)?;
+
+	Ok(freqs)
+}
+
+/**
  * Strides over an encoded string and returns one that matches the repeating
  * pattern of a key
  */
@@ -262,17 +315,6 @@ fn write_dict_freqs(freqs: &Vec<f32>) -> std::io::Result<()> {
 	file.write(&data)?;
 
 	Ok(())
-}
-
-fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
-	let mut file = File::open("frequencies.json")?;
-
-	let mut data = Vec::<u8>::new();
-	file.read_to_end(&mut data)?;
-
-	let freqs = serde_json::from_slice(&data)?;
-
-	Ok(freqs)
 }
 
 /**
@@ -307,18 +349,6 @@ fn write_fwds(dict: &Dict, length: usize) -> std::io::Result<Dict> {
 	Ok(dicts_by_length[length].clone())
 }
 
-fn read_fwd(length: usize) -> std::io::Result<Dict> {
-	let path = format!("dict{}.json", length);
-	let mut file = File::open(path)?;
-
-	let mut data = Vec::<u8>::new();
-	file.read_to_end(&mut data)?;
-
-	let freqs = serde_json::from_slice(&data)?;
-
-	Ok(freqs)
-}
-
 fn main() -> std::io::Result<()> {
 	let start = std::time::Instant::now();
 
@@ -329,31 +359,8 @@ fn main() -> std::io::Result<()> {
 	let first_word_len = 13;
 
 	let ciphertext = encode(&raw_ciphertext);
-
-	// Get first word dictionary
-	let dict_read = read_fwd(first_word_len);
-	let dict = match dict_read {
-		Ok(d) => d,
-		_ => {
-			let raw_dict = get_dictionary(dictionary_file);
-			let dict = &raw_dict.iter().map(|w| encode(w)).collect();
-			write_fwds(dict, first_word_len)?
-		}
-	};
-
-	// Get letter frequencies
-	let freqs_read = read_dict_freqs();
-	let dict_freqs = match freqs_read {
-		Ok(freqs) => freqs,
-		_ => {
-			let raw_dict = get_dictionary(dictionary_file);
-			let encoded = raw_dict.iter().map(|w| encode(w)).collect();
-			let freqs = gen_dict_freqs(&encoded);
-			write_dict_freqs(&freqs)?;
-
-			freqs
-		}
-	};
+	let dict = get_fwd(dictionary_file, first_word_len)?;
+	let dict_freqs = get_dict_freqs(dictionary_file)?;
 
 	let mut best_keys: Vec<Vec<u8>> = Vec::new();
 
@@ -377,7 +384,7 @@ fn main() -> std::io::Result<()> {
 		}
 	}
 
-	println!("It took {}ms", start.elapsed().as_millis());
+	println!("It took {}us", start.elapsed().as_micros());
 
 	Ok(())
 }
