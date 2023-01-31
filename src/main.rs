@@ -353,9 +353,9 @@ fn main() -> std::io::Result<()> {
 	let start = std::time::Instant::now();
 
 	let dictionary_file = "./dictionary.txt";
-	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
-	let pw_len = 7;
-	let first_word_len = 13;
+	let raw_ciphertext = "LDWMEKPOPSWNOAVBIDHIPCEWAETYRVOAUPSINOVDIEDHCDSELHCCPVHRPOHZUSERSFS".to_string();
+	let pw_len = 6;
+	let first_word_len = 9;
 
 	let ciphertext = encode(&raw_ciphertext);
 	let dict = get_fwd(dictionary_file, first_word_len)?;
