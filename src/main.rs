@@ -2,10 +2,13 @@
 extern crate test;
 
 pub mod attempt_order;
+pub mod dict_tree;
 
 use std::fs::File;
 use std::io::prelude::*;
 use serde_json;
+
+use crate::dict_tree::DictTree;
 
 type Encoded = Vec<u8>;
 type Dict = Vec<Encoded>;
@@ -24,7 +27,9 @@ fn all_or_nothing(input: &Vec<Option<u8>>) -> Option<Encoded> {
 /**
  * Checks if an attempted decryption is a possible solution
  */
+#[allow(dead_code)]
 fn check_attempt(attempt: &Encoded, first_word_dict: &Dict) -> bool {
+	// let start = std::time::Instant::now();
 	let first_word_length = first_word_dict[0].len();
 
 	for word in first_word_dict {
@@ -42,10 +47,11 @@ fn check_attempt(attempt: &Encoded, first_word_dict: &Dict) -> bool {
 
 		// If any of the words were possible, just return true
 		if word_possible {
+			// println!("Check took {} us", start.elapsed().as_micros());
 			return true;
 		}
 	}
-
+	// println!("Check took {} us", start.elapsed().as_micros());
 	return false;
 }
 
@@ -153,6 +159,7 @@ fn encrypt_str(input: &Encoded, key: &Encoded) -> Encoded {
 /**
  * Filters a given dictionary to only include words of a certain length
  */
+#[allow(dead_code)]
 fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 	dict.iter().filter(|w| w.len() == length).map(|w| w.clone()).collect()
 }
@@ -274,25 +281,53 @@ fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
 	Ok(freqs)
 }
 
+fn write_d_tree(dict: &DictTree) -> std::io::Result<()> {
+	let mut file = File::create("d_tree.json")?;
+
+	let json = serde_json::to_string(&dict)?;
+	let mut data: Vec<u8> = Vec::new();
+
+	write!(&mut data, "{}", json)?;
+	file.write(&data)?;
+
+	Ok(())
+}
+
 fn main() -> std::io::Result<()> {
-	let start = std::time::Instant::now();
+	// let start = std::time::Instant::now();
 
 	// Set inputs
 	let dictionary_file = "./dictionary.txt";
-	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
-	let pw_len = 7;
-	let first_word_len = 13;
+	let raw_ciphertext = "MSOKKJCOSXOEEKDTOSLGFWCMCHSUSGX".to_string();
+	let pw_len = 2;
+	let first_word_len = 6;
 
 	// Dictionaries
 	let raw_dict = get_dictionary(dictionary_file);
-	let filtered_dict = filter_dictionary(&raw_dict, first_word_len);
+	// println!("Load full dictionary {} us", start.elapsed().as_micros());
+	// let start = std::time::Instant::now();
+	// let filtered_dict = filter_dictionary(&raw_dict, first_word_len);
+	// println!("filter dictionary {} us", start.elapsed().as_micros());
+	// let start = std::time::Instant::now();
 
 	// Encode
 	let ciphertext = encode(&raw_ciphertext);
-	// println!("Encode ciphertext: {}ms", start.elapsed().as_millis());
+	// println!("Encode ciphertext: {} us", start.elapsed().as_micros());
+	// let start = std::time::Instant::now();
 
-	let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
-	// println!("Encode first_word_dict: {}ms", start.elapsed().as_millis());
+	let dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
+	// println!("Encode first_word_dict: {} us", start.elapsed().as_micros());
+
+
+	// let fwd = first_word_dict.clone();
+
+	let start = std::time::Instant::now();
+	let d_tree = DictTree::new(&dict);
+	println!("Build Dict tree: {} us", start.elapsed().as_micros());
+
+	write_d_tree(&d_tree)?;
+
+	let start = std::time::Instant::now();
 
 	// Get letter frequencies
 	let freqs_read = read_dict_freqs();
@@ -306,6 +341,8 @@ fn main() -> std::io::Result<()> {
 			freqs
 		}
 	};
+	println!("Get dict freqs {} us", start.elapsed().as_micros());
+	let start = std::time::Instant::now();
 
 	let mut best_keys: Vec<Vec<u8>> = Vec::new();
 
@@ -315,21 +352,36 @@ fn main() -> std::io::Result<()> {
 
 		best_keys.push(find_best_offsets(&dict_freqs, &ciphertext_freqs));
 	}
+	// println!("Find best key lists {} us", start.elapsed().as_micros());
+	// let start = std::time::Instant::now();
 
 	// Attempt decryption
 	let order = attempt_order::AttemptOrder::new(pw_len, 26);
 
+
 	for combination in order {
 		let key = choose_key(&best_keys, &combination);
 		let attempt = decrypt_str(&ciphertext, &key);
+		let attempt_slice = attempt.iter().take(first_word_len).map(|e| *e).collect();
 
-		if check_attempt(&attempt, &first_word_dict) {
+		// let start = std::time::Instant::now();
+		// let check1 = check_attempt(&attempt, &first_word_dict);
+		// println!("table took {} us", start.elapsed().as_micros());
+
+		// let start = std::time::Instant::now();
+		let check2 = d_tree.contains(&attempt_slice);
+		// println!("tree took {} us", start.elapsed().as_micros());
+
+		// assert_eq!(check1, check2, "word failed: {}", decode(&attempt));
+
+		if check2 {
 			println!("{} -> {}", decode(&key), decode(&attempt).to_uppercase());
 			break;
 		}
 	}
+	println!("decryption took {} us", start.elapsed().as_micros());
 
-	println!("It took {}ms", start.elapsed().as_millis());
+	// println!("It took {} ms", start.elapsed().as_millis());
 
 	Ok(())
 }
@@ -419,5 +471,13 @@ mod tests {
 	#[bench]
 	fn bench_main(b: &mut Bencher) {
 		b.iter(|| main())
+	}
+
+	#[bench]
+	fn bench_build_dict_tree(b: &mut Bencher) {
+		let raw_dict = get_dictionary("dictionary.txt");
+		let dict: Dict = raw_dict.iter().map(|w| encode(w)).collect();
+
+		b.iter(|| DictTree::new(&dict));
 	}
 }
