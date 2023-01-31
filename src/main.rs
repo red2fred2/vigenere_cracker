@@ -5,7 +5,6 @@ pub mod attempt_order;
 
 use std::fs::File;
 use std::io::prelude::*;
-use serde_json;
 
 type Encoded = Vec<u8>;
 type Dict = Vec<Encoded>;
@@ -261,26 +260,22 @@ fn get_fwd(dictionary_file: &str, len: usize) -> std::io::Result<Dict> {
 }
 
 fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
-	let mut file = File::open("frequencies.json")?;
+	let mut file = File::open("frequencies.cache")?;
 
 	let mut data = Vec::<u8>::new();
 	file.read_to_end(&mut data)?;
 
-	let freqs = serde_json::from_slice(&data)?;
-
-	Ok(freqs)
+	Ok(bincode::deserialize(&data).unwrap())
 }
 
 fn read_fwd(length: usize) -> std::io::Result<Dict> {
-	let path = format!("dict{}.json", length);
+	let path = format!("dict{}.cache", length);
 	let mut file = File::open(path)?;
 
 	let mut data = Vec::<u8>::new();
 	file.read_to_end(&mut data)?;
 
-	let fwd = serde_json::from_slice(&data)?;
-
-	Ok(fwd)
+	Ok(bincode::deserialize(&data).unwrap())
 }
 
 /**
@@ -306,12 +301,9 @@ fn strip_message(message: &String) -> String {
 }
 
 fn write_dict_freqs(freqs: &Vec<f32>) -> std::io::Result<()> {
-	let mut file = File::create("frequencies.json")?;
+	let mut file = File::create("frequencies.cache")?;
 
-	let json = serde_json::to_string(&freqs)?;
-	let mut data: Vec<u8> = Vec::new();
-
-	write!(&mut data, "{}", json)?;
+	let data = bincode::serialize(&freqs).unwrap();
 	file.write(&data)?;
 
 	Ok(())
@@ -336,13 +328,10 @@ fn write_fwds(dict: &Dict, length: usize) -> std::io::Result<Dict> {
 	}
 
 	for (i, d) in dicts_by_length.iter().enumerate() {
-		let path = format!("dict{}.json", i);
+		let path = format!("dict{}.cache", i);
 		let mut file = File::create(path)?;
 
-		let json = serde_json::to_string(&d)?;
-		let mut data: Vec<u8> = Vec::new();
-		write!(&mut data, "{}", json)?;
-
+		let data = bincode::serialize(d).unwrap();
 		file.write(&data)?;
 	}
 
@@ -384,7 +373,7 @@ fn main() -> std::io::Result<()> {
 		}
 	}
 
-	println!("It took {}us", start.elapsed().as_micros());
+	println!("It took {} µs", start.elapsed().as_micros());
 
 	Ok(())
 }
