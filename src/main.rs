@@ -3,6 +3,7 @@ extern crate test;
 
 pub mod attempt_order;
 
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -341,10 +342,17 @@ fn write_fwds(dict: &Dict, length: usize) -> std::io::Result<Dict> {
 fn main() -> std::io::Result<()> {
 	let start = std::time::Instant::now();
 
+	let args: Vec<String> = env::args().collect();
+
+	if args.len() != 4 {
+		println!("Invalid usage, try cracker <key length> <first word length> <ciphertext>");
+		std::process::exit(1);
+	}
+
 	let dictionary_file = "./dictionary.txt";
-	let raw_ciphertext = "LDWMEKPOPSWNOAVBIDHIPCEWAETYRVOAUPSINOVDIEDHCDSELHCCPVHRPOHZUSERSFS".to_string();
-	let pw_len = 6;
-	let first_word_len = 9;
+	let raw_ciphertext = &args[3];
+	let pw_len = args[1].parse::<usize>().unwrap();
+	let first_word_len = args[2].parse::<usize>().unwrap();
 
 	let ciphertext = encode(&raw_ciphertext);
 	let dict = get_fwd(dictionary_file, first_word_len)?;
