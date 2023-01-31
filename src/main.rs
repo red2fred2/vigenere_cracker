@@ -153,6 +153,7 @@ fn encrypt_str(input: &Encoded, key: &Encoded) -> Encoded {
 /**
  * Filters a given dictionary to only include words of a certain length
  */
+#[allow(dead_code)]
 fn filter_dictionary(dict: &Vec<String>, length: usize) -> Vec<String> {
 	dict.iter().filter(|w| w.len() == length).map(|w| w.clone()).collect()
 }
@@ -274,6 +275,50 @@ fn read_dict_freqs() -> std::io::Result<Vec<f32>> {
 	Ok(freqs)
 }
 
+/**
+ * Writes the first word dictionary cache files
+ */
+fn write_fwds(dict: &Dict, length: usize) -> std::io::Result<Dict> {
+	let mut dicts_by_length = vec![Vec::new();3];
+
+	for word in dict {
+		let len = word.len();
+
+		match dicts_by_length.get_mut(len) {
+			Some(d) => d.push(word.clone()),
+			None => {
+				dicts_by_length.insert(len, Vec::new());
+				dicts_by_length[len].push(word.clone());
+			}
+		};
+	}
+
+	for (i, d) in dicts_by_length.iter().enumerate() {
+		let path = format!("dict{}.json", i);
+		let mut file = File::create(path)?;
+
+		let json = serde_json::to_string(&d)?;
+		let mut data: Vec<u8> = Vec::new();
+		write!(&mut data, "{}", json)?;
+
+		file.write(&data)?;
+	}
+
+	Ok(dicts_by_length[length].clone())
+}
+
+fn read_fwd(length: usize) -> std::io::Result<Dict> {
+	let path = format!("dict{}.json", length);
+	let mut file = File::open(path)?;
+
+	let mut data = Vec::<u8>::new();
+	file.read_to_end(&mut data)?;
+
+	let freqs = serde_json::from_slice(&data)?;
+
+	Ok(freqs)
+}
+
 fn main() -> std::io::Result<()> {
 	let start = std::time::Instant::now();
 
@@ -283,22 +328,25 @@ fn main() -> std::io::Result<()> {
 	let pw_len = 7;
 	let first_word_len = 13;
 
-	// Dictionaries
-	let raw_dict = get_dictionary(dictionary_file);
-	let filtered_dict = filter_dictionary(&raw_dict, first_word_len);
-
-	// Encode
 	let ciphertext = encode(&raw_ciphertext);
-	// println!("Encode ciphertext: {}ms", start.elapsed().as_millis());
 
-	let first_word_dict: Dict = filtered_dict.iter().map(|w| encode(w)).collect();
-	// println!("Encode first_word_dict: {}ms", start.elapsed().as_millis());
+	// Get first word dictionary
+	let dict_read = read_fwd(first_word_len);
+	let dict = match dict_read {
+		Ok(d) => d,
+		_ => {
+			let raw_dict = get_dictionary(dictionary_file);
+			let dict = &raw_dict.iter().map(|w| encode(w)).collect();
+			write_fwds(dict, first_word_len)?
+		}
+	};
 
 	// Get letter frequencies
 	let freqs_read = read_dict_freqs();
 	let dict_freqs = match freqs_read {
 		Ok(freqs) => freqs,
 		_ => {
+			let raw_dict = get_dictionary(dictionary_file);
 			let encoded = raw_dict.iter().map(|w| encode(w)).collect();
 			let freqs = gen_dict_freqs(&encoded);
 			write_dict_freqs(&freqs)?;
@@ -323,7 +371,7 @@ fn main() -> std::io::Result<()> {
 		let key = choose_key(&best_keys, &combination);
 		let attempt = decrypt_str(&ciphertext, &key);
 
-		if check_attempt(&attempt, &first_word_dict) {
+		if check_attempt(&attempt, &dict) {
 			println!("{} -> {}", decode(&key), decode(&attempt).to_uppercase());
 			break;
 		}
