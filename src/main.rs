@@ -352,7 +352,6 @@ fn write_fwds(dict: &Dict, length: usize) -> std::io::Result<Dict> {
 fn main() -> std::io::Result<()> {
 	let start = std::time::Instant::now();
 
-	// Set inputs
 	let dictionary_file = "./dictionary.txt";
 	let raw_ciphertext = "VVVLZWWPBWHZDKBTXLDCGOTGTGRWAQWZSDHEMXLBELUMO".to_string();
 	let pw_len = 7;
@@ -362,6 +361,7 @@ fn main() -> std::io::Result<()> {
 	let dict = get_fwd(dictionary_file, first_word_len)?;
 	let dict_freqs = get_dict_freqs(dictionary_file)?;
 
+	// Find best keys to try
 	let mut best_keys: Vec<Vec<u8>> = Vec::new();
 
 	for key_part in 0..pw_len {
