@@ -1,3 +1,2 @@
 /target
-frequencies.json
-dict*.zst
+*.json
