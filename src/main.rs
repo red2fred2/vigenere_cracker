@@ -278,9 +278,9 @@ fn read_fwd(length: usize) -> std::io::Result<Dict> {
 	let mut data = Vec::<u8>::new();
 	file.read_to_end(&mut data)?;
 
-	let freqs = serde_json::from_slice(&data)?;
+	let fwd = serde_json::from_slice(&data)?;
 
-	Ok(freqs)
+	Ok(fwd)
 }
 
 /**
