@@ -384,6 +384,9 @@ fn main() -> std::io::Result<()> {
 		}
 	}
 
+	// This version is faster to cache, but does not use the dictionary tree
+	// data structure from the report. The last ciphertext should take around 4ms
+	// instead of 155µs in the tree based version.
 	println!("Decryption took {} µs", start.elapsed().as_micros());
 
 	Ok(())
